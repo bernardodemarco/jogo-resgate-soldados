@@ -2,9 +2,10 @@
 #include <SDL2/SDL.h>
 #include "./constants.h"
 
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
+SDL_Window *window;
+SDL_Renderer *renderer;
 int game_is_running = FALSE;
+int last_frame_time = 0;
 
 struct game_object {
     float x;
@@ -67,12 +68,9 @@ void setup() {
     helicopter.height = 90;
     helicopter.width = 140;
     helicopter.x = 20;
-    helicopter.y = 20;
+    helicopter.y = WINDOW_HEIGHT - 100;
 }
-
-// PROCESS INPUT -> UPDATE -> RENDER -----|
-// ^                                      |
-// |---------------------------------------                                      
+                                     
 void render() {
     SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
     SDL_RenderClear(renderer);
@@ -89,7 +87,16 @@ void render() {
     SDL_RenderPresent(renderer);
 }
 
-// void update() {}
+void update() {
+    float delta_time = (SDL_GetTicks() - last_frame_time) / 1000.0f;
+    last_frame_time = SDL_GetTicks();
+    helicopter.x += PIXELS_PER_SECOND * delta_time;
+}
+
+// PROCESS INPUT -> UPDATE -> RENDER ------
+// ^                                      |
+// |--------------------------------------- 
+
 
 int main() {
     game_is_running = initialize_window();
@@ -98,7 +105,7 @@ int main() {
 
     while (game_is_running) {
         process_input();
-        // update();
+        update();
         render();
     }
 
