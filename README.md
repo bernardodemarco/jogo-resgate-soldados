@@ -10,13 +10,17 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
 - Guilherme Cardoso
 - Lorenzo Coracini
 
-## Setup
-
-Ambiente Linux
+## Setup Linux
 
 ```bash
-    # instala lib sdl2
-    sudo apt install libsdl2-dev
+   # instala lib sdl2
+   sudo apt install libsdl2-dev
+
+   # compila jogo
+   make build
+
+   # executa jogo
+   make run
 ```
 
 ## Threads
