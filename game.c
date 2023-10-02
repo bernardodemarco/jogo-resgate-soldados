@@ -69,30 +69,21 @@ void process_input() {
     }
 }
                                      
-void render(GameObject *obj1, GameObject *obj2) {
+void render_aircrafts(GameObject aircrafts[]) {
     SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
     SDL_RenderClear(renderer);
-
-    SDL_Rect sdl_obj1 = {
-        (int) obj1 -> x,
-        (int) obj1 -> y,
-        (int) obj1 -> width,
-        (int) obj1 -> height
-    };
-
-    SDL_Rect sdl_obj2 = {
-        (int) obj2 -> x,
-        (int) obj2 -> y,
-        (int) obj2 -> width,
-        (int) obj2 -> height
-    };
-    SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
-    SDL_RenderFillRect(renderer, &sdl_obj1);
-    SDL_RenderFillRect(renderer, &sdl_obj2);
-
+    for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
+        SDL_Rect sdl_obj = {
+            (int) aircrafts[i].x,
+            (int) aircrafts[i].y,
+            (int) aircrafts[i].width,
+            (int) aircrafts[i].height
+        };
+        SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
+        SDL_RenderFillRect(renderer, &sdl_obj);
+    }
     SDL_RenderPresent(renderer);
 }
-
 
 void move_aircrafts(GameObject *aircraft) {
     if (aircraft -> id == 0) {
@@ -128,7 +119,6 @@ void setup_aircraft(GameObject *aircraft, int i) {
     }
 }
 
-
 int main() {
     game_is_running = initialize_window();
     GameObject anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];
@@ -145,7 +135,7 @@ int main() {
 
     while (game_is_running) {
         process_input();
-        render(&anti_aircrafts[0], &anti_aircrafts[1]);
+        render_aircrafts(anti_aircrafts);
     }
 
     destroy_window();
