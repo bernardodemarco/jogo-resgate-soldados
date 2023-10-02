@@ -100,9 +100,9 @@ void move_aircrafts(GameObject *aircraft) {
     } else {
         aircraft -> x -= aircraft -> velocity;
     }
-    // if (obj -> x < 0 || obj -> x + obj -> width > WINDOW_WIDTH) {
-    //     obj->velocity *= -1;
-    // }
+    if (aircraft -> x < 0 || aircraft -> x + aircraft -> width > WINDOW_WIDTH) {
+        aircraft -> velocity *= -1;
+    }
 }
 
 void *anti_aircraft_thread(void *args) {
@@ -124,7 +124,7 @@ void setup_aircraft(GameObject *aircraft, int i) {
     if (i == 0) {
         aircraft -> x = 20;
     } else {
-        aircraft -> x = WINDOW_WIDTH - 20;
+        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
     }
 }
 
