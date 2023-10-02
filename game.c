@@ -17,6 +17,14 @@ typedef struct {
     float velocity;
 } GameObject;
 
+typedef struct {
+    float x;
+    float y;
+    float width;
+    float height;
+} Bridge;
+
+// --------------------WINDOW---------------------------
 int initialize_window() {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         printf("Error initializing SDL\n");
@@ -53,6 +61,8 @@ void destroy_window() {
     SDL_Quit();
 }
 
+// --------------------INPUT---------------------------
+
 void process_input() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -68,6 +78,8 @@ void process_input() {
         }
     }
 }
+
+// --------------------AIRCRAFTS---------------------------
                                      
 void render_aircrafts(GameObject aircrafts[]) {
     SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
@@ -82,7 +94,7 @@ void render_aircrafts(GameObject aircrafts[]) {
         SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
         SDL_RenderFillRect(renderer, &sdl_obj);
     }
-    SDL_RenderPresent(renderer);
+    // SDL_RenderPresent(renderer);
 }
 
 void move_aircrafts(GameObject *aircraft) {
@@ -119,8 +131,33 @@ void setup_aircraft(GameObject *aircraft, int i) {
     }
 }
 
+// --------------------BRIDGE---------------------------
+void setup_bridge(Bridge *bridge) {
+    bridge -> width = 140;
+    bridge -> height = 90;
+    bridge -> y = WINDOW_HEIGHT - 100;
+    bridge -> x = WINDOW_WIDTH / 2;
+}   
+
+void render_bridge(Bridge bridge) {
+    SDL_Rect sdl_obj = {
+        (int) bridge.x,
+        (int) bridge.y,
+        (int) bridge.width,
+        (int) bridge.height
+    };
+    SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+    SDL_RenderFillRect(renderer, &sdl_obj);
+    SDL_RenderPresent(renderer);
+}
+
+// --------------------MAIN---------------------------
+
 int main() {
     game_is_running = initialize_window();
+    Bridge bridge;
+    setup_bridge(&bridge);
+
     GameObject anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];
 
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
@@ -136,6 +173,7 @@ int main() {
     while (game_is_running) {
         process_input();
         render_aircrafts(anti_aircrafts);
+        render_bridge(bridge);
     }
 
     destroy_window();
