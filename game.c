@@ -122,7 +122,7 @@ void setup_aircraft(GameObject *aircraft, int i) {
     aircraft -> id = i;
     aircraft -> width = 140;
     aircraft -> height = 90;
-    aircraft -> y = WINDOW_HEIGHT - 100;
+    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
     aircraft -> velocity = 2;
     if (i == 0) {
         aircraft -> x = 20;
@@ -133,10 +133,10 @@ void setup_aircraft(GameObject *aircraft, int i) {
 
 // --------------------BRIDGE---------------------------
 void setup_bridge(Bridge *bridge) {
-    bridge -> width = 140;
-    bridge -> height = 90;
-    bridge -> y = WINDOW_HEIGHT - 100;
-    bridge -> x = WINDOW_WIDTH / 2;
+    bridge -> width = 500;
+    bridge -> height = 50;
+    bridge -> y = WINDOW_HEIGHT - bridge -> height;
+    bridge -> x = (WINDOW_WIDTH / 2) - (bridge -> width / 2);
 }   
 
 void render_bridge(Bridge bridge) {
@@ -146,7 +146,7 @@ void render_bridge(Bridge bridge) {
         (int) bridge.width,
         (int) bridge.height
     };
-    SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+    SDL_SetRenderDrawColor(renderer, 102, 66, 40, 255);
     SDL_RenderFillRect(renderer, &sdl_obj);
     SDL_RenderPresent(renderer);
 }
