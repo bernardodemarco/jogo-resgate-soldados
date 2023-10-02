@@ -10,6 +10,10 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
 - Guilherme Cardoso
 - Lorenzo Coracini
 
+#### Tutorial que podem ser úteis
+
+- [Colisão objetos (bateria anti-aérea com ponte + foguete com helicóptero)](https://www.google.com/search?q=detect+colision+between+two+objects+sdl&oq=detect+colision+between+two+objects+sdl&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAHSAQg5MzQ1ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:4f9acd0d,vid:cWek-nbAcAE,st:0)
+
 ## Setup Linux
 
 ```bash
