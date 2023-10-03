@@ -4,10 +4,6 @@
 #include <stdbool.h>
 #include "./constants.h"
 
-SDL_Window *window;
-SDL_Renderer *renderer;
-int game_is_running = false;
-
 typedef struct {
     int id;
     float x;
@@ -24,7 +20,14 @@ typedef struct {
     float height;
 } Bridge;
 
+SDL_Window *window;
+SDL_Renderer *renderer;
+Bridge bridge;
+pthread_mutex_t bridge_mutex;
+bool game_is_running = false;
+
 // --------------------WINDOW---------------------------
+
 int initialize_window() {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         printf("Error initializing SDL\n");
@@ -79,7 +82,21 @@ void process_input() {
     }
 }
 
-// --------------------AIRCRAFTS---------------------------
+// --------------------ANTI AIRCRAFT---------------------------
+
+void setup_aircraft(GameObject *aircraft, int i) {
+    aircraft -> id = i;
+    aircraft -> width = 140;
+    aircraft -> height = 90;
+    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
+    if (i == 0) {
+        aircraft -> x = 20;
+        aircraft -> velocity = 2;
+    } else {
+        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
+        aircraft -> velocity = -3;
+    }
+}
                                      
 void render_aircrafts(GameObject aircrafts[]) {
     SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
@@ -94,17 +111,26 @@ void render_aircrafts(GameObject aircrafts[]) {
         SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
         SDL_RenderFillRect(renderer, &sdl_obj);
     }
-    // SDL_RenderPresent(renderer);
 }
 
 void move_aircrafts(GameObject *aircraft) {
-    if (aircraft -> id == 0) {
-        aircraft -> x += aircraft -> velocity;
-    } else {
-        aircraft -> x -= aircraft -> velocity;
-    }
+    aircraft -> x += aircraft -> velocity;
     if (aircraft -> x < 0 || aircraft -> x + aircraft -> width > WINDOW_WIDTH) {
         aircraft -> velocity *= -1;
+    }
+}
+
+void move_aircraft_out_of_bridge(GameObject *aircraft) {
+    if (aircraft -> velocity > 0) {
+        while (aircraft -> x < bridge.x + bridge.width) {
+            aircraft -> x += aircraft -> velocity;
+            SDL_Delay(10);
+        }
+    } else {
+        while (aircraft -> x + aircraft -> width > bridge.x) {
+            aircraft -> x += aircraft -> velocity;
+            SDL_Delay(10);
+        }
     }
 }
 
@@ -112,29 +138,27 @@ void *anti_aircraft_thread(void *args) {
     GameObject *anti_aircraft = (GameObject *) args;
 
     while (game_is_running) {
-        move_aircrafts(anti_aircraft);
-        SDL_Delay(10);
+        bool has_collided = 
+            (anti_aircraft -> x < bridge.x + bridge.width) &&
+            (anti_aircraft -> x + anti_aircraft -> width > bridge.x);
+
+        if (has_collided) {
+            pthread_mutex_lock(&bridge_mutex);
+            move_aircraft_out_of_bridge(anti_aircraft);
+            pthread_mutex_unlock(&bridge_mutex);
+        } else {
+            move_aircrafts(anti_aircraft);
+            SDL_Delay(10);
+        }
     }
     pthread_exit(NULL);
 }
 
-void setup_aircraft(GameObject *aircraft, int i) {
-    aircraft -> id = i;
-    aircraft -> width = 140;
-    aircraft -> height = 90;
-    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
-    aircraft -> velocity = 2;
-    if (i == 0) {
-        aircraft -> x = 20;
-    } else {
-        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
-    }
-}
-
 // --------------------BRIDGE---------------------------
+
 void setup_bridge(Bridge *bridge) {
     bridge -> width = 500;
-    bridge -> height = 50;
+    bridge -> height = 10;
     bridge -> y = WINDOW_HEIGHT - bridge -> height;
     bridge -> x = (WINDOW_WIDTH / 2) - (bridge -> width / 2);
 }   
@@ -154,17 +178,17 @@ void render_bridge(Bridge bridge) {
 // --------------------MAIN---------------------------
 
 int main() {
+    pthread_mutex_init(&bridge_mutex, NULL);
+
     game_is_running = initialize_window();
-    Bridge bridge;
     setup_bridge(&bridge);
 
     GameObject anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];
-
+    pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
+    
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         setup_aircraft(&anti_aircrafts[i], i);
     }
-
-    pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
 
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         pthread_create(&anti_aircraft_threads[i], NULL, anti_aircraft_thread, &anti_aircrafts[i]);
@@ -182,5 +206,6 @@ int main() {
         pthread_join(anti_aircraft_threads[i], NULL);
     }
 
+    pthread_mutex_destroy(&bridge_mutex);
     return 0;
 }
