@@ -4,11 +4,6 @@
 #include <stdbool.h>
 #include "./constants.h"
 
-SDL_Window *window;
-SDL_Renderer *renderer;
-bool game_is_running = false;
-pthread_mutex_t bridge_mutex;
-
 typedef struct {
     int id;
     float x;
@@ -25,10 +20,14 @@ typedef struct {
     float height;
 } Bridge;
 
+SDL_Window *window;
+SDL_Renderer *renderer;
 Bridge bridge;
-
+pthread_mutex_t bridge_mutex;
+bool game_is_running = false;
 
 // --------------------WINDOW---------------------------
+
 int initialize_window() {
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         printf("Error initializing SDL\n");
@@ -114,7 +113,6 @@ void move_aircraft_out_of_bridge(GameObject *aircraft) {
             SDL_Delay(10);
         }
     } else {
-        // Velocidade negativa: mover gradualmente para a esquerda
         while (aircraft->x + aircraft->width > bridge.x) {
             aircraft->x += aircraft->velocity;
             SDL_Delay(10);
@@ -157,6 +155,7 @@ void setup_aircraft(GameObject *aircraft, int i) {
 }
 
 // --------------------BRIDGE---------------------------
+
 void setup_bridge(Bridge *bridge) {
     bridge -> width = 500;
     bridge -> height = 25;
