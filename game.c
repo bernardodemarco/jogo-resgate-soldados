@@ -83,6 +83,20 @@ void process_input() {
 }
 
 // --------------------ANTI AIRCRAFT---------------------------
+
+void setup_aircraft(GameObject *aircraft, int i) {
+    aircraft -> id = i;
+    aircraft -> width = 140;
+    aircraft -> height = 90;
+    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
+    if (i == 0) {
+        aircraft -> x = 20;
+        aircraft -> velocity = 2;
+    } else {
+        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
+        aircraft -> velocity = -3;
+    }
+}
                                      
 void render_aircrafts(GameObject aircrafts[]) {
     SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
@@ -107,14 +121,14 @@ void move_aircrafts(GameObject *aircraft) {
 }
 
 void move_aircraft_out_of_bridge(GameObject *aircraft) {
-    if (aircraft->velocity > 0) {
-        while (aircraft->x < bridge.x + bridge.width) {
-            aircraft->x += aircraft->velocity;
+    if (aircraft -> velocity > 0) {
+        while (aircraft -> x < bridge.x + bridge.width) {
+            aircraft -> x += aircraft -> velocity;
             SDL_Delay(10);
         }
     } else {
-        while (aircraft->x + aircraft->width > bridge.x) {
-            aircraft->x += aircraft->velocity;
+        while (aircraft -> x + aircraft -> width > bridge.x) {
+            aircraft -> x += aircraft -> velocity;
             SDL_Delay(10);
         }
     }
@@ -140,25 +154,11 @@ void *anti_aircraft_thread(void *args) {
     pthread_exit(NULL);
 }
 
-void setup_aircraft(GameObject *aircraft, int i) {
-    aircraft -> id = i;
-    aircraft -> width = 140;
-    aircraft -> height = 90;
-    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
-    if (i == 0) {
-        aircraft -> x = 20;
-        aircraft -> velocity = 2;
-    } else {
-        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
-        aircraft -> velocity = -3;
-    }
-}
-
 // --------------------BRIDGE---------------------------
 
 void setup_bridge(Bridge *bridge) {
     bridge -> width = 500;
-    bridge -> height = 25;
+    bridge -> height = 10;
     bridge -> y = WINDOW_HEIGHT - bridge -> height;
     bridge -> x = (WINDOW_WIDTH / 2) - (bridge -> width / 2);
 }   
