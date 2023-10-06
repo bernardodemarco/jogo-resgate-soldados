@@ -119,12 +119,14 @@ void move_helicopter(Helicopter *helicopter, const Uint8 *keyboardState) {
     if (keyboardState[SDL_SCANCODE_DOWN]) {
         helicopter -> sdl_obj.y += helicopter -> velocity;
     }
-    
-    if (helicopter -> sdl_obj.x < 0) {
-        is_helicopter_destroyed = true;
-    }
 
-    if (helicopter -> sdl_obj.x + helicopter -> sdl_obj.w > WINDOW_WIDTH) {
+    bool has_collided_with_viewport = 
+        (helicopter -> sdl_obj.x <= 0) ||
+        (helicopter -> sdl_obj.x + helicopter -> sdl_obj.w >= WINDOW_WIDTH) ||
+        (helicopter -> sdl_obj.y <= 0) ||
+        (helicopter -> sdl_obj.y + helicopter -> sdl_obj.h >= WINDOW_HEIGHT);
+    
+    if (has_collided_with_viewport) {
         is_helicopter_destroyed = true;
     }
 }   
