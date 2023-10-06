@@ -64,3 +64,11 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
 - **Níveis de Dificuldade:**
   - Implementação de uma variável global que determina o nível de dificuldade do jogo (fácil, médio, difícil).
   - Isso afeta a quantidade inicial de munição das baterias antiaéreas e o tempo de recarga.
+
+## Falta Implementar
+
+   - left building
+   - right building
+   - hostages
+   - missiles ( shoot, reload and colision )
+   - different game difficulties
