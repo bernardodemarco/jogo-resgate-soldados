@@ -82,6 +82,57 @@ void process_input() {
     }
 }
 
+// --------------------AIRCRAFT---------------------------
+
+void setup_helicopter(GameObject *helicopter){
+    helicopter -> id = 0;
+    helicopter -> width = 200;
+    helicopter -> height = 200;
+    helicopter -> y = 0;
+    helicopter -> x = 0;
+    helicopter -> velocity = 5;
+}
+
+void render_helicopter(GameObject helicopter) {
+    SDL_Rect sdl_obj = {
+        (int) helicopter.x,
+        (int) helicopter.y,
+        (int) helicopter.width,
+        (int) helicopter.height
+    };
+    SDL_SetRenderDrawColor(renderer, 255, 15, 15, 255);
+    SDL_RenderFillRect(renderer, &sdl_obj);
+}
+
+void move_helicopter(GameObject *helicopter, const Uint8 *keyboardState) {
+    if (keyboardState[SDL_SCANCODE_LEFT]) {
+        helicopter->x -= helicopter->velocity;
+    }
+    if (keyboardState[SDL_SCANCODE_RIGHT]) {
+        helicopter->x += helicopter->velocity;
+    }
+    
+
+    if (helicopter->x < 0) {
+        helicopter->x = 0;
+    }
+    if (helicopter->x + helicopter->width > WINDOW_WIDTH) {
+        helicopter->x = WINDOW_WIDTH - helicopter->width;
+    }
+}   
+
+void* helicopter_thread_func(void* args) {
+    GameObject *helicopter = (GameObject *) args;
+
+    const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
+
+    while (game_is_running) {
+        move_helicopter(helicopter, keyboardState);
+        SDL_Delay(10);
+        }
+    pthread_exit(NULL);
+}
+
 // --------------------ANTI AIRCRAFT---------------------------
 
 void setup_aircraft(GameObject *aircraft, int i) {
@@ -175,6 +226,7 @@ void render_bridge(Bridge bridge) {
     SDL_RenderPresent(renderer);
 }
 
+
 // --------------------MAIN---------------------------
 
 int main() {
@@ -182,6 +234,13 @@ int main() {
 
     game_is_running = initialize_window();
     setup_bridge(&bridge);
+
+    GameObject helicopter;
+    pthread_t helicopter_thread;
+
+    setup_helicopter(&helicopter);
+    pthread_create(&helicopter_thread, NULL, helicopter_thread_func, &helicopter);
+
 
     GameObject anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];
     pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
@@ -198,6 +257,7 @@ int main() {
         process_input();
         render_aircrafts(anti_aircrafts);
         render_bridge(bridge);
+        render_helicopter(helicopter);
     }
 
     destroy_window();
