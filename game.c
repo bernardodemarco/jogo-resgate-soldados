@@ -14,6 +14,12 @@ typedef struct {
 } GameObject;
 
 typedef struct {
+    int id;
+    int velocity;
+    SDL_Rect sdl_obj;
+} AntiAircraft;
+
+typedef struct {
     float x;
     float y;
     float width;
@@ -84,13 +90,16 @@ void process_input() {
 
 // --------------------AIRCRAFT---------------------------
 
-void setup_helicopter(GameObject *helicopter){
-    helicopter -> id = 0;
-    helicopter -> width = 200;
-    helicopter -> height = 200;
-    helicopter -> y = 0;
-    helicopter -> x = 0;
-    helicopter -> velocity = 5;
+GameObject setup_helicopter() {
+    GameObject helicopter;
+
+    helicopter.width = 200;
+    helicopter.height = 200;
+    helicopter.y = 0;
+    helicopter.x = 0;
+    helicopter.velocity = 5;
+    
+    return helicopter;
 }
 
 void render_helicopter(GameObject helicopter) {
@@ -135,63 +144,63 @@ void* helicopter_thread_func(void* args) {
 
 // --------------------ANTI AIRCRAFT---------------------------
 
-void setup_aircraft(GameObject *aircraft, int i) {
-    aircraft -> id = i;
-    aircraft -> width = 140;
-    aircraft -> height = 90;
-    aircraft -> y = WINDOW_HEIGHT - aircraft -> height;
-    if (i == 0) {
-        aircraft -> x = 20;
-        aircraft -> velocity = 2;
+AntiAircraft setup_aircraft(int id) {
+    AntiAircraft aircraft;
+    aircraft.id = id;
+    aircraft.sdl_obj.w = 140;
+    aircraft.sdl_obj.h = 90;
+    aircraft.sdl_obj.y = WINDOW_HEIGHT - aircraft.sdl_obj.h;
+    if (id == 0) {
+        aircraft.sdl_obj.x = 20;
+        aircraft.velocity = 2;
     } else {
-        aircraft -> x = WINDOW_WIDTH - aircraft -> width - 20;
-        aircraft -> velocity = -3;
+        aircraft.sdl_obj.x = WINDOW_WIDTH - aircraft.sdl_obj.w - 20;
+        aircraft.velocity = -3;
     }
+    return aircraft;
 }
                                      
-void render_aircrafts(GameObject aircrafts[]) {
-    SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
-    SDL_RenderClear(renderer);
+void render_aircrafts(AntiAircraft aircrafts[]) {
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
-        SDL_Rect sdl_obj = {
-            (int) aircrafts[i].x,
-            (int) aircrafts[i].y,
-            (int) aircrafts[i].width,
-            (int) aircrafts[i].height
-        };
+        // SDL_Rect sdl_obj = {
+        //     (int) aircrafts[i].x,
+        //     (int) aircrafts[i].y,
+        //     (int) aircrafts[i].width,
+        //     (int) aircrafts[i].height
+        // };
         SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
-        SDL_RenderFillRect(renderer, &sdl_obj);
+        SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
     }
 }
 
-void move_aircrafts(GameObject *aircraft) {
-    aircraft -> x += aircraft -> velocity;
-    if (aircraft -> x < 0 || aircraft -> x + aircraft -> width > WINDOW_WIDTH) {
+void move_aircrafts(AntiAircraft *aircraft) {
+    aircraft -> sdl_obj.x += aircraft -> velocity;
+    if (aircraft -> sdl_obj.x < 0 || aircraft -> sdl_obj.x + aircraft -> sdl_obj.w > WINDOW_WIDTH) {
         aircraft -> velocity *= -1;
     }
 }
 
-void move_aircraft_out_of_bridge(GameObject *aircraft) {
+void move_aircraft_out_of_bridge(AntiAircraft *aircraft) {
     if (aircraft -> velocity > 0) {
-        while (aircraft -> x < bridge.x + bridge.width) {
-            aircraft -> x += aircraft -> velocity;
+        while (aircraft -> sdl_obj.x < bridge.x + bridge.width) {
+            aircraft -> sdl_obj.x += aircraft -> velocity;
             SDL_Delay(10);
         }
     } else {
-        while (aircraft -> x + aircraft -> width > bridge.x) {
-            aircraft -> x += aircraft -> velocity;
+        while (aircraft -> sdl_obj.x + aircraft -> sdl_obj.w > bridge.x) {
+            aircraft -> sdl_obj.x += aircraft -> velocity;
             SDL_Delay(10);
         }
     }
 }
 
 void *anti_aircraft_thread(void *args) {
-    GameObject *anti_aircraft = (GameObject *) args;
+    AntiAircraft *anti_aircraft = (AntiAircraft *) args;
 
     while (game_is_running) {
         bool has_collided = 
-            (anti_aircraft -> x < bridge.x + bridge.width) &&
-            (anti_aircraft -> x + anti_aircraft -> width > bridge.x);
+            (anti_aircraft -> sdl_obj.x < bridge.x + bridge.width) &&
+            (anti_aircraft -> sdl_obj.x + anti_aircraft -> sdl_obj.w > bridge.x);
 
         if (has_collided) {
             pthread_mutex_lock(&bridge_mutex);
@@ -207,11 +216,11 @@ void *anti_aircraft_thread(void *args) {
 
 // --------------------BRIDGE---------------------------
 
-void setup_bridge(Bridge *bridge) {
-    bridge -> width = 500;
-    bridge -> height = 10;
-    bridge -> y = WINDOW_HEIGHT - bridge -> height;
-    bridge -> x = (WINDOW_WIDTH / 2) - (bridge -> width / 2);
+void setup_bridge() {
+    bridge.width = 500;
+    bridge.height = 10;
+    bridge.y = WINDOW_HEIGHT - bridge.height;
+    bridge.x = (WINDOW_WIDTH / 2) - (bridge.width / 2);
 }   
 
 void render_bridge(Bridge bridge) {
@@ -223,41 +232,44 @@ void render_bridge(Bridge bridge) {
     };
     SDL_SetRenderDrawColor(renderer, 102, 66, 40, 255);
     SDL_RenderFillRect(renderer, &sdl_obj);
-    SDL_RenderPresent(renderer);
 }
 
+void render_game(AntiAircraft anti_aircrafts[], Bridge bridge, GameObject helicopter) {
+    SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
+    SDL_RenderClear(renderer);
+    
+    render_bridge(bridge);
+    render_aircrafts(anti_aircrafts);
+    render_helicopter(helicopter);
+
+    SDL_RenderPresent(renderer);
+}
 
 // --------------------MAIN---------------------------
 
 int main() {
-    pthread_mutex_init(&bridge_mutex, NULL);
-
     game_is_running = initialize_window();
-    setup_bridge(&bridge);
 
-    GameObject helicopter;
+    pthread_mutex_init(&bridge_mutex, NULL);
+    setup_bridge();
+
     pthread_t helicopter_thread;
-
-    setup_helicopter(&helicopter);
+    GameObject helicopter = setup_helicopter();
     pthread_create(&helicopter_thread, NULL, helicopter_thread_func, &helicopter);
 
-
-    GameObject anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];
-    pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
-    
+    AntiAircraft anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];    
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
-        setup_aircraft(&anti_aircrafts[i], i);
+        anti_aircrafts[i] = setup_aircraft(i);
     }
 
+    pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         pthread_create(&anti_aircraft_threads[i], NULL, anti_aircraft_thread, &anti_aircrafts[i]);
     }
 
     while (game_is_running) {
         process_input();
-        render_aircrafts(anti_aircrafts);
-        render_bridge(bridge);
-        render_helicopter(helicopter);
+        render_game(anti_aircrafts, bridge, helicopter);
     }
 
     destroy_window();
