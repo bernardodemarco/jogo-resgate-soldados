@@ -21,10 +21,12 @@ typedef struct {
 
 SDL_Window *window;
 SDL_Renderer *renderer;
-bool game_is_running = false;
 
 Bridge bridge;
 pthread_mutex_t bridge_mutex;
+
+bool game_is_running = false;
+bool is_helicopter_destroyed = false;
 
 // --------------------WINDOW---------------------------
 
@@ -87,17 +89,17 @@ void process_input() {
 Helicopter setup_helicopter() {
     Helicopter helicopter;
 
-    helicopter.sdl_obj.w = 200;
-    helicopter.sdl_obj.h = 200;
-    helicopter.sdl_obj.y = 0;
-    helicopter.sdl_obj.x = 0;
-    helicopter.velocity = 5;
+    helicopter.sdl_obj.w = HELICOPTER_WIDTH;
+    helicopter.sdl_obj.h = HELICOPTER_HEIGHT;
+    helicopter.sdl_obj.y = HELICOPTER_Y;
+    helicopter.sdl_obj.x = HELICOPTER_X;
+    helicopter.velocity = HELICOPTER_VELOCITY;
     
     return helicopter;
 }
 
 void render_helicopter(Helicopter helicopter) {
-    SDL_SetRenderDrawColor(renderer, 255, 15, 15, 255);
+    SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
     SDL_RenderFillRect(renderer, &(helicopter.sdl_obj));
 }
 
@@ -109,13 +111,21 @@ void move_helicopter(Helicopter *helicopter, const Uint8 *keyboardState) {
     if (keyboardState[SDL_SCANCODE_RIGHT]) {
         helicopter -> sdl_obj.x += helicopter -> velocity;
     }
+  
+    if (keyboardState[SDL_SCANCODE_UP]) {
+        helicopter -> sdl_obj.y -= helicopter -> velocity;
+    }
+  
+    if (keyboardState[SDL_SCANCODE_DOWN]) {
+        helicopter -> sdl_obj.y += helicopter -> velocity;
+    }
     
     if (helicopter -> sdl_obj.x < 0) {
-        helicopter -> sdl_obj.x = 0;
+        is_helicopter_destroyed = true;
     }
 
     if (helicopter -> sdl_obj.x + helicopter -> sdl_obj.w > WINDOW_WIDTH) {
-        helicopter -> sdl_obj.x = WINDOW_WIDTH - helicopter -> sdl_obj.w;
+        is_helicopter_destroyed = true;
     }
 }   
 
@@ -124,7 +134,7 @@ void* helicopter_thread_func(void* args) {
 
     const Uint8 *keyboardState = SDL_GetKeyboardState(NULL);
 
-    while (game_is_running) {
+    while (true) {
         move_helicopter(helicopter, keyboardState);
         SDL_Delay(10);
     }
@@ -137,9 +147,9 @@ void* helicopter_thread_func(void* args) {
 AntiAircraft setup_aircraft(int id) {
     AntiAircraft aircraft;
     aircraft.id = id;
-    aircraft.sdl_obj.w = 140;
-    aircraft.sdl_obj.h = 90;
-    aircraft.sdl_obj.y = WINDOW_HEIGHT - aircraft.sdl_obj.h;
+    aircraft.sdl_obj.w = ANTI_AIRCRAFT_WIDTH;
+    aircraft.sdl_obj.h = ANTI_AIRCRAFT_HEIGHT;
+    aircraft.sdl_obj.y = ANTI_AIRCRAFT_Y;
     if (id == 0) {
         aircraft.sdl_obj.x = 20;
         aircraft.velocity = 2;
@@ -152,13 +162,7 @@ AntiAircraft setup_aircraft(int id) {
                                      
 void render_aircrafts(AntiAircraft aircrafts[]) {
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
-        // SDL_Rect sdl_obj = {
-        //     (int) aircrafts[i].x,
-        //     (int) aircrafts[i].y,
-        //     (int) aircrafts[i].width,
-        //     (int) aircrafts[i].height
-        // };
-        SDL_SetRenderDrawColor(renderer, 16, 69, 29, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
     }
 }
@@ -187,7 +191,7 @@ void move_aircraft_out_of_bridge(AntiAircraft *aircraft) {
 void *anti_aircraft_thread(void *args) {
     AntiAircraft *anti_aircraft = (AntiAircraft *) args;
 
-    while (game_is_running) {
+    while (true) {
         bool has_collided = 
             (anti_aircraft -> sdl_obj.x < bridge.sdl_obj.x + bridge.sdl_obj.w) &&
             (anti_aircraft -> sdl_obj.x + anti_aircraft -> sdl_obj.w > bridge.sdl_obj.x);
@@ -207,10 +211,10 @@ void *anti_aircraft_thread(void *args) {
 // --------------------BRIDGE---------------------------
 
 void setup_bridge() {
-    bridge.sdl_obj.w = 500;
-    bridge.sdl_obj.h = 10;
-    bridge.sdl_obj.y = WINDOW_HEIGHT - bridge.sdl_obj.h;
-    bridge.sdl_obj.x = (WINDOW_WIDTH / 2) - (bridge.sdl_obj.w / 2);
+    bridge.sdl_obj.w = BRIDGE_WIDTH;
+    bridge.sdl_obj.h = BRIDGE_HEIGHT;
+    bridge.sdl_obj.y = BRIDGE_Y;
+    bridge.sdl_obj.x = BRIDGE_X;
 }   
 
 void render_bridge(Bridge bridge) {
@@ -221,7 +225,7 @@ void render_bridge(Bridge bridge) {
 // --------------------RENDER GAME OBJECTS---------------------------
 
 void render_game(AntiAircraft anti_aircrafts[], Bridge bridge, Helicopter helicopter) {
-    SDL_SetRenderDrawColor(renderer, 183, 239, 197, 255);
+    SDL_SetRenderDrawColor(renderer, 52, 150, 235, 0.4);
     SDL_RenderClear(renderer);
     
     render_bridge(bridge);
@@ -253,15 +257,16 @@ int main() {
         pthread_create(&anti_aircraft_threads[i], NULL, anti_aircraft_thread, &anti_aircrafts[i]);
     }
 
-    while (game_is_running) {
+    while (game_is_running && !is_helicopter_destroyed) {
         process_input();
         render_game(anti_aircrafts, bridge, helicopter);
     }
 
     destroy_window();
 
-    for (int i = 0; i < 2; i++) {
-        pthread_join(anti_aircraft_threads[i], NULL);
+    pthread_cancel(helicopter_thread);
+    for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
+        pthread_cancel(anti_aircraft_threads[i]);
     }
 
     pthread_mutex_destroy(&bridge_mutex);
