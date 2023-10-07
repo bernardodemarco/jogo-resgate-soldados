@@ -70,5 +70,7 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
 - [x] left building
 - [x] right building
 - [x] hostages
-- [ ] missiles ( shoot, reload and colision )
+- [x] missiles shoot
+- [ ] missiles reload
+- [ ] missiles collision
 - [ ] different game difficulties

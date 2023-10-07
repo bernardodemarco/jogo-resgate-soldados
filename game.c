@@ -2,13 +2,27 @@
 #include <SDL2/SDL.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <semaphore.h>
 #include "./constants.h"
+
+typedef struct {
+    SDL_Rect sdl_obj;
+    bool is_active;
+} Missile;
 
 typedef struct {
     int id;
     int velocity;
+    sem_t ammunition_sem;
+    Uint32 last_shot;
+    Missile missiles[AMMUNITION];
     SDL_Rect sdl_obj;
 } AntiAircraft;
+
+typedef struct {
+    Missile *missile;
+    AntiAircraft *anti_aircraft;
+} MissileThreadArgs;
 
 typedef struct {
     int velocity;
@@ -38,6 +52,8 @@ SDL_Renderer *renderer;
 
 Bridge bridge;
 pthread_mutex_t bridge_mutex;
+
+pthread_mutex_t is_missile_active_mutex;
 
 bool game_is_running = false;
 bool is_helicopter_destroyed = false;
@@ -235,6 +251,34 @@ void* helicopter_thread_func(void* args) {
 
     pthread_exit(NULL);
 }
+// --------------------MISSILE---------------------------
+void render_missile(SDL_Rect *sdl_obj) {
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, sdl_obj);
+}
+
+void setup_missile(Missile *missile, AntiAircraft *anti_aircraft) {
+    missile -> sdl_obj.w = MISSILE_SIZE;
+    missile -> sdl_obj.h = MISSILE_SIZE;
+    missile -> sdl_obj.x = anti_aircraft -> sdl_obj.x + (anti_aircraft -> sdl_obj.w / 2);
+    missile -> sdl_obj.y = anti_aircraft -> sdl_obj.y;
+}
+
+void *missile_thread_func(void *args) {
+    Missile *missile = (Missile *) args;
+
+    pthread_mutex_lock(&is_missile_active_mutex);
+    missile -> is_active = true;
+    pthread_mutex_unlock(&is_missile_active_mutex);
+    while (missile -> sdl_obj.y > -MISSILE_SIZE) {
+        missile -> sdl_obj.y -= 7;
+        SDL_Delay(10);
+    }
+    pthread_mutex_lock(&is_missile_active_mutex);
+    missile -> is_active = false;
+    pthread_mutex_unlock(&is_missile_active_mutex);
+    pthread_exit(NULL);
+}
 
 // --------------------ANTI AIRCRAFT---------------------------
 
@@ -244,6 +288,7 @@ AntiAircraft setup_aircraft(int id) {
     aircraft.sdl_obj.w = ANTI_AIRCRAFT_WIDTH;
     aircraft.sdl_obj.h = ANTI_AIRCRAFT_HEIGHT;
     aircraft.sdl_obj.y = ANTI_AIRCRAFT_Y;
+    aircraft.last_shot = SDL_GetTicks();
     if (id == 0) {
         aircraft.sdl_obj.x = BUILDING_WIDTH + 10;
         aircraft.velocity = 2;
@@ -258,6 +303,42 @@ void render_aircrafts(AntiAircraft aircrafts[]) {
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
+    }
+
+    // -------------PROBLEMA-----------------------
+    // Observamos que os atributos dos elementos do vetor missiles (structs Missile)
+    // consistiam em lixo de memória. Isso fazia com que a tela fosse inteiramente pintada de branco
+    // e causava outros comportamentos estranhos no programa
+    // -----------------MOTIVO-------------------
+    // Durante as primeiras renderizações, tínhamos 
+    // a struct AntiAircraft criada, porém nem todos os seus atributos tinham sido inicializados.
+    // Na função setup_aircraft, apenas definimos o id, w, h, y, x e velocity.
+    // Se fossemos utilizar outro atributo como MISSILES, ammunition_sem e last_shot eles iriam ser lixo de memória.
+    // Isso acontecia até a função setup_missile ser chamada, a qual define
+    // a struct Missile em uma determinada posição do vetor MISSILES
+    // --------------SOLUÇÃO---------------------
+    // Para garantir que determinada posição do vetor MISSILE
+    // não consiste em lixo de memória, basta ter uma condição checando
+    // que o WIDTH (ou alguma outra propriedade) tem o valor correto.
+    // Caso isso seja verdadeiro, significa que a função setup_missile() já foi executada,
+    // e, pode-se verificar se essa struct na posição i no vetor está ativa.
+    // Caso seja verdadeiro, o missile é renderizado, caso contrário não.
+    for (int i = 0; i < AMMUNITION; i++) {
+        Missile missile = aircrafts[0].missiles[i];
+        if (missile.sdl_obj.w == MISSILE_SIZE && missile.is_active) {
+            render_missile(&missile.sdl_obj);
+        }
+    }
+ 
+    for (int i = 0; i < AMMUNITION; i++) {
+        Missile missile = aircrafts[1].missiles[i];
+        bool should_render_missile = 
+            (missile.sdl_obj.w == MISSILE_SIZE) &&
+            (missile.sdl_obj.w == MISSILE_SIZE) &&
+            (missile.is_active);
+        if (should_render_missile) {
+            render_missile(&missile.sdl_obj);
+        }
     }
 }
 
@@ -284,6 +365,11 @@ void move_aircraft_out_of_bridge(AntiAircraft *aircraft) {
 
 void *anti_aircraft_thread(void *args) {
     AntiAircraft *anti_aircraft = (AntiAircraft *) args;
+    sem_init(&(anti_aircraft -> ammunition_sem), 0, AMMUNITION);
+
+    int missile_index = 0;
+    pthread_mutex_t missile_index_mutex;
+    pthread_mutex_init(&missile_index_mutex, NULL);
 
     while (true) {
         bool has_collided = 
@@ -298,7 +384,36 @@ void *anti_aircraft_thread(void *args) {
             move_aircrafts(anti_aircraft);
             SDL_Delay(10);
         }
+
+        Uint32 now = SDL_GetTicks();
+        if (now - anti_aircraft -> last_shot > TIME_BETWEEN_SHOTS) {
+            int sem_return = sem_trywait(&(anti_aircraft -> ammunition_sem));
+            // sem_trywait -> tenta passar pelo semáforo
+            // se não conseguir, retorna -1 e NÃO coloca a tarefa na fila de bloqueados
+            // Se a tarefa fosse colocada na fila de bloqueados, ela ficaria bloqueada
+            // até conseguir passar pelo semáforo, ou seja,
+            // não iria executar o restante das suas operações e
+            // o anti_aircraft não iria se mover
+            if (sem_return == -1) {
+                continue;
+            }
+
+            pthread_mutex_lock(&missile_index_mutex);
+            int current_index = missile_index;
+            missile_index = (missile_index + 1) % AMMUNITION;
+            pthread_mutex_unlock(&missile_index_mutex);
+
+            pthread_t missile_thread;
+            setup_missile(
+                &(anti_aircraft -> missiles[current_index]),
+                anti_aircraft
+            );
+            pthread_create(&missile_thread, NULL, missile_thread_func, &(anti_aircraft -> missiles[current_index]));
+            anti_aircraft -> last_shot = SDL_GetTicks();
+        }
     }
+    sem_destroy(&(anti_aircraft -> ammunition_sem));
+    pthread_mutex_destroy(&missile_index_mutex);
     pthread_exit(NULL);
 }
 
@@ -322,6 +437,7 @@ void render_game(Bridge bridge, Building buildings[], Hostage hostages[], AntiAi
 int main() {
     game_is_running = initialize_window();
 
+    pthread_mutex_init(&is_missile_active_mutex, NULL);
     pthread_mutex_init(&bridge_mutex, NULL);
     setup_bridge();
 
@@ -383,6 +499,7 @@ int main() {
         pthread_cancel(anti_aircraft_threads[i]);
     }
 
+    pthread_mutex_destroy(&is_missile_active_mutex);
     pthread_mutex_destroy(&bridge_mutex);
     return 0;
 }
