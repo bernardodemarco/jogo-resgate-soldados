@@ -2,19 +2,20 @@
 #include <SDL2/SDL.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <semaphore.h>
 #include "./constants.h"
 
 typedef struct {
     SDL_Rect sdl_obj;
+    bool is_active;
 } Missile;
 
 typedef struct {
     int id;
     int velocity;
-    int ammunition;
-    int active_missiles;
+    sem_t ammunition_sem;
     Uint32 last_shot;
-    Missile missiles[10];
+    Missile missiles[AMMUNITION];
     SDL_Rect sdl_obj;
 } AntiAircraft;
 
@@ -249,12 +250,11 @@ void* helicopter_thread_func(void* args) {
     pthread_exit(NULL);
 }
 // --------------------MISSILE---------------------------
-// void render_missiles(Missile missiles[]) {
-//     for (int i = 0; i < 5; i++) {
-//         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-//         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
-//     }
-// }
+void render_missile(SDL_Rect *sdl_obj) {
+    // printf("WIDTH = %d\n", sdl_obj->w);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(renderer, sdl_obj);
+}
 
 void setup_missile(Missile *missile, AntiAircraft *anti_aircraft) {
     missile -> sdl_obj.w = MISSILE_SIZE;
@@ -265,8 +265,19 @@ void setup_missile(Missile *missile, AntiAircraft *anti_aircraft) {
 
 void *missile_thread_func(void *args) {
     Missile *missile = (Missile *) args;
-    missile -> sdl_obj.y += 10;
-    // decrementar um quando do active_missiles sair da tela
+
+    // printf("w inside of missile thread = %d\n", missile -> sdl_obj.w);
+
+    missile -> is_active = true;
+    // printf("is_active = %d\n", missile -> is_active);
+    while (missile -> sdl_obj.y > 0) {
+        // printf("WIDTH = %d\n", missile -> sdl_obj.w);
+        missile -> sdl_obj.y -= 10;
+        SDL_Delay(10);
+    }
+    printf("depois while loop\n");
+    missile -> is_active = false;
+    pthread_exit(NULL);
 }
 
 // --------------------ANTI AIRCRAFT---------------------------
@@ -277,6 +288,7 @@ AntiAircraft setup_aircraft(int id) {
     aircraft.sdl_obj.w = ANTI_AIRCRAFT_WIDTH;
     aircraft.sdl_obj.h = ANTI_AIRCRAFT_HEIGHT;
     aircraft.sdl_obj.y = ANTI_AIRCRAFT_Y;
+    aircraft.last_shot = SDL_GetTicks();
     if (id == 0) {
         aircraft.sdl_obj.x = BUILDING_WIDTH + 10;
         aircraft.velocity = 2;
@@ -294,9 +306,25 @@ void render_aircrafts(AntiAircraft aircrafts[]) {
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
-
-        // desenhar seus respectivos misseis
     }
+
+    for (int i = 0; i < AMMUNITION; i++) {
+        Missile missile = aircrafts[0].missiles[i];
+        // printf("is_active = %d\n", missile.is_active);
+        if (missile.is_active) {
+            // printf("i = %d\n", i);
+            // printf("WIDTH = %d\n", missile.sdl_obj.w);
+            render_missile(&missile.sdl_obj);
+        }
+    }
+
+    
+    // for (int i = 0; i < AMMUNITION; i++) {
+    //     Missile missile = aircrafts[1].missiles[i];
+    //     if (missile.is_active) {
+    //         render_missile(&missile.sdl_obj);
+    //     }
+    // }
 }
 
 void move_aircrafts(AntiAircraft *aircraft) {
@@ -322,6 +350,11 @@ void move_aircraft_out_of_bridge(AntiAircraft *aircraft) {
 
 void *anti_aircraft_thread(void *args) {
     AntiAircraft *anti_aircraft = (AntiAircraft *) args;
+    sem_init(&(anti_aircraft -> ammunition_sem), 0, AMMUNITION);
+
+    int missile_index = 0;
+    pthread_mutex_t missile_index_mutex;
+    pthread_mutex_init(&missile_index_mutex, NULL);
 
     while (true) {
         bool has_collided = 
@@ -337,15 +370,33 @@ void *anti_aircraft_thread(void *args) {
             SDL_Delay(10);
         }
 
-        setup_missile(
-            &(anti_aircraft -> missiles[anti_aircraft -> active_missiles]),
-            anti_aircraft
-        );
+        Uint32 now = SDL_GetTicks();
+        if (now - anti_aircraft -> last_shot > TIME_BETWEEN_SHOTS) {
+            sem_wait(&(anti_aircraft -> ammunition_sem));
+            
+            pthread_mutex_lock(&missile_index_mutex);
+            int current_index = missile_index;
+            printf("current_index = %d\n", current_index);
+            missile_index = (missile_index + 1) % AMMUNITION;
+            pthread_mutex_unlock(&missile_index_mutex);
 
-        pthread_t missile_thread;
-        pthread_create(&missile_thread, NULL, missile_thread_func, &(anti_aircraft -> missiles[anti_aircraft -> active_missiles]));
-        anti_aircraft -> active_missiles++;
+            // int sem_value;
+            // sem_getvalue(
+            //     &(anti_aircraft -> ammunition_sem),
+            //     &sem_value
+            // );
+
+            pthread_t missile_thread;
+            setup_missile(
+                &(anti_aircraft -> missiles[current_index]),
+                anti_aircraft
+            );
+            pthread_create(&missile_thread, NULL, missile_thread_func, &(anti_aircraft -> missiles[current_index]));
+            anti_aircraft -> last_shot = SDL_GetTicks();
+        }
     }
+    sem_destroy(&(anti_aircraft -> ammunition_sem));
+    pthread_mutex_destroy(&missile_index_mutex);
     pthread_exit(NULL);
 }
 

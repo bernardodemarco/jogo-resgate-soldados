@@ -31,3 +31,4 @@
 
 #define TIME_BETWEEN_SHOTS 500
 #define MISSILE_SIZE 30
+#define AMMUNITION 30 
