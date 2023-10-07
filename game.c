@@ -5,10 +5,23 @@
 #include "./constants.h"
 
 typedef struct {
+    SDL_Rect sdl_obj;
+} Missile;
+
+typedef struct {
     int id;
     int velocity;
+    int ammunition;
+    int active_missiles;
+    Uint32 last_shot;
+    Missile missiles[10];
     SDL_Rect sdl_obj;
 } AntiAircraft;
+
+typedef struct {
+    Missile *missile;
+    AntiAircraft *anti_aircraft;
+} MissileThreadArgs;
 
 typedef struct {
     int velocity;
@@ -235,6 +248,26 @@ void* helicopter_thread_func(void* args) {
 
     pthread_exit(NULL);
 }
+// --------------------MISSILE---------------------------
+// void render_missiles(Missile missiles[]) {
+//     for (int i = 0; i < 5; i++) {
+//         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+//         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
+//     }
+// }
+
+void setup_missile(Missile *missile, AntiAircraft *anti_aircraft) {
+    missile -> sdl_obj.w = MISSILE_SIZE;
+    missile -> sdl_obj.h = MISSILE_SIZE;
+    missile -> sdl_obj.x = anti_aircraft -> sdl_obj.w - (anti_aircraft -> sdl_obj.w / 2);
+    missile -> sdl_obj.y = anti_aircraft -> sdl_obj.y;
+}
+
+void *missile_thread_func(void *args) {
+    Missile *missile = (Missile *) args;
+    missile -> sdl_obj.y += 10;
+    // decrementar um quando do active_missiles sair da tela
+}
 
 // --------------------ANTI AIRCRAFT---------------------------
 
@@ -255,9 +288,14 @@ AntiAircraft setup_aircraft(int id) {
 }
                                      
 void render_aircrafts(AntiAircraft aircrafts[]) {
+    // depois de desenhar cada canhao
+    // desenhar seus respectivos misseis
+
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
+
+        // desenhar seus respectivos misseis
     }
 }
 
@@ -298,6 +336,15 @@ void *anti_aircraft_thread(void *args) {
             move_aircrafts(anti_aircraft);
             SDL_Delay(10);
         }
+
+        setup_missile(
+            &(anti_aircraft -> missiles[anti_aircraft -> active_missiles]),
+            anti_aircraft
+        );
+
+        pthread_t missile_thread;
+        pthread_create(&missile_thread, NULL, missile_thread_func, &(anti_aircraft -> missiles[anti_aircraft -> active_missiles]));
+        anti_aircraft -> active_missiles++;
     }
     pthread_exit(NULL);
 }
