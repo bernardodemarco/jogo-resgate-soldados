@@ -365,8 +365,29 @@ void move_aircraft_out_of_bridge(AntiAircraft *aircraft) {
     }
 }
 
+void handle_bridge_on_move_to_left_building(AntiAircraft *aircraft) {
+    if (aircraft -> velocity > 0) {
+        aircraft -> velocity *= -1;
+    }
+
+    while (aircraft -> sdl_obj.x + aircraft -> sdl_obj.w > bridge.sdl_obj.x) {
+        aircraft -> sdl_obj.x += aircraft -> velocity;
+        SDL_Delay(10);
+    }
+}
+
 void move_to_left_building(AntiAircraft *aircraft) {
     while (aircraft -> sdl_obj.x > aircraft -> sdl_obj.w) {
+        bool has_collided_with_bridge = 
+            (aircraft -> sdl_obj.x < bridge.sdl_obj.x + bridge.sdl_obj.w) &&
+            (aircraft -> sdl_obj.x + aircraft -> sdl_obj.w > bridge.sdl_obj.x);
+        
+        if (has_collided_with_bridge) {
+            pthread_mutex_lock(&bridge_mutex);
+            handle_bridge_on_move_to_left_building(aircraft);
+            pthread_mutex_unlock(&bridge_mutex);
+        }
+
         if (aircraft -> velocity > 0) {
             aircraft -> sdl_obj.x -= aircraft -> velocity;
         } else {
@@ -378,7 +399,6 @@ void move_to_left_building(AntiAircraft *aircraft) {
 
 void reload_ammunition(sem_t *sem) {
     for (int i = 0; i < AMMUNITION; i++) {
-        printf("i = %d\n", i);
         sem_post(sem);
     }
     SDL_Delay(LONG_RELOAD_TIME);
@@ -411,7 +431,8 @@ void *anti_aircraft_thread(void *args) {
                 SDL_Delay(10);
                 continue;
             }
-            move_to_left_building(anti_aircraft);
+
+            move_to_left_building(anti_aircraft); // erro!!!
             reload_ammunition(&(anti_aircraft -> ammunition_sem));
             leave_building(anti_aircraft);
             pthread_mutex_unlock(&left_building_mutex);

@@ -98,6 +98,6 @@ Caso seja verdadeiro, o missile é renderizado, caso contrário não.
 - [x] hostages
 - [x] missiles shoot
 - [x] missiles reload
-- [ ] FIX colisão com a ponte quando vai carregar
+- [x] FIX colisão com a ponte quando vai carregar
 - [ ] FEAT missiles collision
 - [ ] FEAT different game difficulties
