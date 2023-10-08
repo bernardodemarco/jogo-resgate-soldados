@@ -10,10 +10,6 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
 - Guilherme Cardoso
 - Lorenzo Coracini
 
-#### Tutorial que podem ser úteis
-
-- [Colisão objetos (bateria anti-aérea com ponte + foguete com helicóptero)](https://www.google.com/search?q=detect+colision+between+two+objects+sdl&oq=detect+colision+between+two+objects+sdl&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAHSAQg5MzQ1ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#fpstate=ive&vld=cid:4f9acd0d,vid:cWek-nbAcAE,st:0)
-
 ## Setup Linux
 
 ```bash
@@ -90,14 +86,3 @@ que o WIDTH (ou alguma outra propriedade) tem o valor correto.
 Caso isso seja verdadeiro, significa que a função setup_missile() já foi executada,
 e, pode-se verificar se essa struct na posição i no vetor está ativa.
 Caso seja verdadeiro, o missile é renderizado, caso contrário não.
-
-## Falta Implementar
-
-- [x] left building
-- [x] right building
-- [x] hostages
-- [x] missiles shoot
-- [x] missiles reload
-- [x] FIX colisão com a ponte quando vai carregar
-- [x] FEAT missiles collision
-- [ ] FEAT different game difficulties (reload_time ok, ammunition, time_between shots ...)
