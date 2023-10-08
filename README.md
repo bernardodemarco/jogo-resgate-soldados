@@ -65,12 +65,39 @@ O jogo "Resgate de Soldados" é um jogo implementado em linguagem C, projetado p
   - Implementação de uma variável global que determina o nível de dificuldade do jogo (fácil, médio, difícil).
   - Isso afeta a quantidade inicial de munição das baterias antiaéreas e o tempo de recarga.
 
+### Problema que quebramos a cabeça
+
+#### Problema
+
+Observamos que os atributos dos elementos do vetor missiles (structs Missile)
+consistiam em lixo de memória. Isso fazia com que a tela fosse inteiramente pintada de branco
+e causava outros comportamentos estranhos no programa
+
+#### Motivo
+
+Durante as primeiras renderizações, tínhamos
+a struct AntiAircraft criada, porém nem todos os seus atributos tinham sido inicializados.
+Na função setup_aircraft, apenas definimos o id, w, h, y, x e velocity.
+Se fossemos utilizar outro atributo como MISSILES, ammunition_sem e last_shot eles iriam ser lixo de memória.
+Isso acontecia até a função setup_missile ser chamada, a qual define
+a struct Missile em uma determinada posição do vetor MISSILES
+
+#### Solução
+
+Para garantir que determinada posição do vetor MISSILE
+não consiste em lixo de memória, basta ter uma condição checando
+que o WIDTH (ou alguma outra propriedade) tem o valor correto.
+Caso isso seja verdadeiro, significa que a função setup_missile() já foi executada,
+e, pode-se verificar se essa struct na posição i no vetor está ativa.
+Caso seja verdadeiro, o missile é renderizado, caso contrário não.
+
 ## Falta Implementar
 
 - [x] left building
 - [x] right building
 - [x] hostages
 - [x] missiles shoot
-- [ ] missiles reload
-- [ ] missiles collision
-- [ ] different game difficulties
+- [x] missiles reload
+- [ ] FIX colisão com a ponte quando vai carregar
+- [ ] FEAT missiles collision
+- [ ] FEAT different game difficulties
