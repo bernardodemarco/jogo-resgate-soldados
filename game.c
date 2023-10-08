@@ -16,7 +16,7 @@ typedef struct {
     int velocity;
     sem_t ammunition_sem;
     Uint32 last_shot;
-    Missile missiles[AMMUNITION];
+    Missile *missiles;
     SDL_Rect sdl_obj;
 } AntiAircraft;
 
@@ -70,6 +70,7 @@ bool has_missile_collided_with_helicopter = false;
 
 int reload_time = 0;
 int time_between_shots = 0;
+int ammunition = 0;
 
 int right_building_hostages = 0;
 
@@ -77,12 +78,15 @@ void init_difficulty_vars(int difficulty) {
     if (difficulty == 0) {
         reload_time = EASY_RELOAD_TIME;
         time_between_shots = EASY_TIME_BETWEEN_SHOTS;
+        ammunition = EASY_AMMUNITION;
     } else if (difficulty == 1) {
         reload_time = MEDIUM_RELOAD_TIME;
         time_between_shots = MEDIUM_TIME_BETWEEN_SHOTS;
+        ammunition = MEDIUM_AMMUNITION;
     } else {
         reload_time = HARD_RELOAD_TIME;
         time_between_shots = HARD_TIME_BETWEEN_SHOTS;
+        ammunition = HARD_AMMUNITION;
     }
 }
 
@@ -331,6 +335,9 @@ AntiAircraft setup_aircraft(int id) {
         aircraft.sdl_obj.x = WINDOW_WIDTH - BUILDING_WIDTH - ANTI_AIRCRAFT_WIDTH;
         aircraft.velocity = -3;
     }
+
+    aircraft.missiles = malloc(sizeof(Missile) * ammunition);
+
     return aircraft;
 }
                                      
@@ -340,7 +347,7 @@ void render_aircrafts(AntiAircraft aircrafts[]) {
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
     }
 
-    for (int i = 0; i < AMMUNITION; i++) {
+    for (int i = 0; i < ammunition; i++) {
         Missile missile = aircrafts[0].missiles[i];
 
         bool should_render_missile = 
@@ -353,7 +360,7 @@ void render_aircrafts(AntiAircraft aircrafts[]) {
         }
     }
  
-    for (int i = 0; i < AMMUNITION; i++) {
+    for (int i = 0; i < ammunition; i++) {
         Missile missile = aircrafts[1].missiles[i];
 
         bool should_render_missile = 
@@ -432,7 +439,7 @@ void move_to_left_building(AntiAircraft *aircraft) {
 }
 
 void reload_ammunition(sem_t *sem) {
-    for (int i = 0; i < AMMUNITION; i++) {
+    for (int i = 0; i < ammunition; i++) {
         sem_post(sem);
     }
     SDL_Delay(reload_time);
@@ -443,7 +450,7 @@ void *anti_aircraft_thread(void *args) {
     AntiAircraft *anti_aircraft = thread_args -> anti_aircraft;
     Helicopter *helicopter = thread_args -> helicopter;
     
-    sem_init(&(anti_aircraft -> ammunition_sem), 0, AMMUNITION);
+    sem_init(&(anti_aircraft -> ammunition_sem), 0, ammunition);
     bool needs_to_reload = false;
     bool is_left_building_occupied = false;
 
@@ -488,7 +495,7 @@ void *anti_aircraft_thread(void *args) {
 
             pthread_mutex_lock(&missile_index_mutex);
             int current_index = missile_index;
-            missile_index = (missile_index + 1) % AMMUNITION;
+            missile_index = (missile_index + 1) % ammunition;
             pthread_mutex_unlock(&missile_index_mutex);
 
             pthread_t missile_thread;
@@ -593,6 +600,7 @@ int main(int argc, char *argv[]) {
 
     pthread_cancel(helicopter_thread);
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
+        free(anti_aircrafts[i].missiles);
         pthread_cancel(anti_aircraft_threads[i]);
     }
 
