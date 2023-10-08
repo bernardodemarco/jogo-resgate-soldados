@@ -99,5 +99,5 @@ Caso seja verdadeiro, o missile é renderizado, caso contrário não.
 - [x] missiles shoot
 - [x] missiles reload
 - [x] FIX colisão com a ponte quando vai carregar
-- [ ] FEAT missiles collision
+- [x] FEAT missiles collision
 - [ ] FEAT different game difficulties

@@ -20,11 +20,6 @@ typedef struct {
 } AntiAircraft;
 
 typedef struct {
-    Missile *missile;
-    AntiAircraft *anti_aircraft;
-} MissileThreadArgs;
-
-typedef struct {
     int velocity;
     SDL_Rect sdl_obj;
 } Helicopter;
@@ -47,6 +42,17 @@ typedef struct {
     Hostage *hostages;
 } HelicopterThreadArgs;
 
+typedef struct {
+    AntiAircraft *anti_aircraft;
+    Helicopter *helicopter;
+} AntiAircraftThreadArgs;
+
+typedef struct {
+    Missile *missile;
+    Helicopter *helicopter;
+} MissileThreadArgs;
+
+
 SDL_Window *window;
 SDL_Renderer *renderer;
 
@@ -59,6 +65,8 @@ pthread_mutex_t left_building_mutex;
 bool game_is_running = false;
 bool is_helicopter_destroyed = false;
 bool is_helicopter_with_hostage = false;
+bool has_missile_collided_with_helicopter = false;
+
 int right_building_hostages = 0;
 
 // --------------------WINDOW---------------------------
@@ -266,12 +274,21 @@ void setup_missile(Missile *missile, AntiAircraft *anti_aircraft) {
 }
 
 void *missile_thread_func(void *args) {
-    Missile *missile = (Missile *) args;
+    MissileThreadArgs *thread_args = (MissileThreadArgs *) args;
+    Missile *missile = thread_args -> missile;
+    Helicopter *helicopter = thread_args -> helicopter;
 
     pthread_mutex_lock(&is_missile_active_mutex);
     missile -> is_active = true;
     pthread_mutex_unlock(&is_missile_active_mutex);
     while (missile -> sdl_obj.y > -MISSILE_SIZE) {
+        bool has_collided_with_helicopter = SDL_HasIntersection(&(helicopter -> sdl_obj), &(missile -> sdl_obj));
+
+        if (has_collided_with_helicopter) {
+            has_missile_collided_with_helicopter = true;
+            pthread_exit(NULL);
+        }
+
         missile -> sdl_obj.y -= 10;
         SDL_Delay(10);
     }
@@ -405,7 +422,10 @@ void reload_ammunition(sem_t *sem) {
 }
 
 void *anti_aircraft_thread(void *args) {
-    AntiAircraft *anti_aircraft = (AntiAircraft *) args;
+    AntiAircraftThreadArgs *thread_args = (AntiAircraftThreadArgs *) args;
+    AntiAircraft *anti_aircraft = thread_args -> anti_aircraft;
+    Helicopter *helicopter = thread_args -> helicopter;
+    
     sem_init(&(anti_aircraft -> ammunition_sem), 0, AMMUNITION);
     bool needs_to_reload = false;
     bool is_left_building_occupied = false;
@@ -432,7 +452,7 @@ void *anti_aircraft_thread(void *args) {
                 continue;
             }
 
-            move_to_left_building(anti_aircraft); // erro!!!
+            move_to_left_building(anti_aircraft);
             reload_ammunition(&(anti_aircraft -> ammunition_sem));
             leave_building(anti_aircraft);
             pthread_mutex_unlock(&left_building_mutex);
@@ -459,7 +479,11 @@ void *anti_aircraft_thread(void *args) {
                 &(anti_aircraft -> missiles[current_index]),
                 anti_aircraft
             );
-            pthread_create(&missile_thread, NULL, missile_thread_func, &(anti_aircraft -> missiles[current_index]));
+            MissileThreadArgs missile_thread_args = {
+                &(anti_aircraft -> missiles[current_index]),
+                helicopter,
+            };
+            pthread_create(&missile_thread, NULL, missile_thread_func, &missile_thread_args);
             anti_aircraft -> last_shot = SDL_GetTicks();
         }
     }
@@ -535,11 +559,14 @@ int main() {
     }
 
     pthread_t anti_aircraft_threads[NUM_OF_ANTI_AIRCRAFTS];
+    AntiAircraftThreadArgs anti_aircraft_args[NUM_OF_ANTI_AIRCRAFTS];
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
-        pthread_create(&anti_aircraft_threads[i], NULL, anti_aircraft_thread, &anti_aircrafts[i]);
+        anti_aircraft_args[i].helicopter = &helicopter;
+        anti_aircraft_args[i].anti_aircraft = &(anti_aircrafts[i]);
+        pthread_create(&anti_aircraft_threads[i], NULL, anti_aircraft_thread, &anti_aircraft_args[i]);
     }
 
-    while (game_is_running && !is_helicopter_destroyed && right_building_hostages < NUM_OF_INITIAL_HOSTAGES) {
+    while (game_is_running && !is_helicopter_destroyed && right_building_hostages < NUM_OF_INITIAL_HOSTAGES && !has_missile_collided_with_helicopter) {
         process_input();
         render_game(bridge, buildings, hostages, anti_aircrafts, helicopter);
     }
