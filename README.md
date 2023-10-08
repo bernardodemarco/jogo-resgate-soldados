@@ -100,4 +100,4 @@ Caso seja verdadeiro, o missile é renderizado, caso contrário não.
 - [x] missiles reload
 - [x] FIX colisão com a ponte quando vai carregar
 - [x] FEAT missiles collision
-- [ ] FEAT different game difficulties
+- [ ] FEAT different game difficulties (reload_time ok, ammunition, time_between shots ...)

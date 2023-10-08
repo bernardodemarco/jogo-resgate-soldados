@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -67,7 +68,23 @@ bool is_helicopter_destroyed = false;
 bool is_helicopter_with_hostage = false;
 bool has_missile_collided_with_helicopter = false;
 
+int reload_time = 0;
+int time_between_shots = 0;
+
 int right_building_hostages = 0;
+
+void init_difficulty_vars(int difficulty) {
+    if (difficulty == 0) {
+        reload_time = EASY_RELOAD_TIME;
+        time_between_shots = EASY_TIME_BETWEEN_SHOTS;
+    } else if (difficulty == 1) {
+        reload_time = MEDIUM_RELOAD_TIME;
+        time_between_shots = MEDIUM_TIME_BETWEEN_SHOTS;
+    } else {
+        reload_time = HARD_RELOAD_TIME;
+        time_between_shots = HARD_TIME_BETWEEN_SHOTS;
+    }
+}
 
 // --------------------WINDOW---------------------------
 
@@ -418,7 +435,7 @@ void reload_ammunition(sem_t *sem) {
     for (int i = 0; i < AMMUNITION; i++) {
         sem_post(sem);
     }
-    SDL_Delay(LONG_RELOAD_TIME);
+    SDL_Delay(reload_time);
 }
 
 void *anti_aircraft_thread(void *args) {
@@ -462,7 +479,7 @@ void *anti_aircraft_thread(void *args) {
         }
 
         Uint32 now = SDL_GetTicks();
-        if (now - anti_aircraft -> last_shot > TIME_BETWEEN_SHOTS) {
+        if (now - anti_aircraft -> last_shot > time_between_shots) {
             int sem_return = sem_trywait(&(anti_aircraft -> ammunition_sem));
             needs_to_reload = sem_return == -1;
             if (needs_to_reload) {
@@ -509,7 +526,8 @@ void render_game(Bridge bridge, Building buildings[], Hostage hostages[], AntiAi
 
 // --------------------MAIN---------------------------
 
-int main() {
+int main(int argc, char *argv[]) {
+    init_difficulty_vars(atoi(argv[1]));
     game_is_running = initialize_window();
 
     pthread_mutex_init(&is_missile_active_mutex, NULL);
