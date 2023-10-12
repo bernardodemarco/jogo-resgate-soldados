@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <semaphore.h>
 #include "./constants.h"
+#include "./types.h"
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -70,7 +71,6 @@ int initialize_window() {
         printf("Error creating SDL renderer\n");
         return false;
     }
-
 
     return true;
 }
@@ -167,7 +167,7 @@ void setup_scenario(Building *buildings, Hostage *hostages) {
         BUILDING_Y
     );
 
-    int x = 8;
+    int x = 8; // posição X do primeiro refém
     for (int i = 0; i < NUM_OF_INITIAL_HOSTAGES; i++) {
         hostages[i] = setup_hostages(
             HOSTAGE_WIDTH,
@@ -175,7 +175,7 @@ void setup_scenario(Building *buildings, Hostage *hostages) {
             x,
             HOSTAGE_Y
         );
-        x += 20;
+        x += 20; // reféns 20px à direita do 1o refém 
     }
 }
 
