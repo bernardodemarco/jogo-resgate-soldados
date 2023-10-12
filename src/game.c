@@ -6,54 +6,6 @@
 #include <semaphore.h>
 #include "./constants.h"
 
-typedef struct {
-    SDL_Rect sdl_obj;
-    bool is_active;
-} Missile;
-
-typedef struct {
-    int id;
-    int velocity;
-    sem_t ammunition_sem;
-    Uint32 last_shot;
-    Missile *missiles;
-    SDL_Rect sdl_obj;
-} AntiAircraft;
-
-typedef struct {
-    int velocity;
-    SDL_Rect sdl_obj;
-} Helicopter;
-
-typedef struct {
-    SDL_Rect sdl_obj;
-} Bridge;
-
-typedef struct {
-    SDL_Rect sdl_obj;
-} Building;
-
-typedef struct {
-    SDL_Rect sdl_obj;
-} Hostage;
-
-typedef struct {
-    Helicopter *helicopter;
-    Building *buildings;
-    Hostage *hostages;
-} HelicopterThreadArgs;
-
-typedef struct {
-    AntiAircraft *anti_aircraft;
-    Helicopter *helicopter;
-} AntiAircraftThreadArgs;
-
-typedef struct {
-    Missile *missile;
-    Helicopter *helicopter;
-} MissileThreadArgs;
-
-
 SDL_Window *window;
 SDL_Renderer *renderer;
 
@@ -67,23 +19,24 @@ bool game_is_running = false;
 bool is_helicopter_destroyed = false;
 bool is_helicopter_with_hostage = false;
 bool has_missile_collided_with_helicopter = false;
+int right_building_hostages = 0;
+
+// --------------GAME DIFFICULTY----------------
 
 int reload_time = 0;
 int time_between_shots = 0;
 int ammunition = 0;
 
-int right_building_hostages = 0;
-
 void init_difficulty_vars(int difficulty) {
-    if (difficulty == 0) {
+    if (difficulty == EASY) {
         reload_time = EASY_RELOAD_TIME;
         time_between_shots = EASY_TIME_BETWEEN_SHOTS;
         ammunition = EASY_AMMUNITION;
-    } else if (difficulty == 1) {
+    } else if (difficulty == MEDIUM) {
         reload_time = MEDIUM_RELOAD_TIME;
         time_between_shots = MEDIUM_TIME_BETWEEN_SHOTS;
         ammunition = MEDIUM_AMMUNITION;
-    } else {
+    } else if (difficulty == HARD) {
         reload_time = HARD_RELOAD_TIME;
         time_between_shots = HARD_TIME_BETWEEN_SHOTS;
         ammunition = HARD_AMMUNITION;
@@ -196,7 +149,37 @@ void render_hostages(Hostage hostages[]) {
     }
 }
 
-// --------------------AIRCRAFT---------------------------
+// --------------------SCENARIO-------------------
+void setup_scenario(Building *buildings, Hostage *hostages) {
+    setup_bridge();
+    
+    buildings[0] = setup_buildings(
+        BUILDING_WIDTH,
+        BUILDING_HEIGHT,
+        LEFT_BUILDING_X,
+        BUILDING_Y
+    );
+    
+    buildings[1] = setup_buildings(
+        BUILDING_WIDTH,
+        BUILDING_HEIGHT,
+        RIGHT_BUILDING_X,
+        BUILDING_Y
+    );
+
+    int x = 8;
+    for (int i = 0; i < NUM_OF_INITIAL_HOSTAGES; i++) {
+        hostages[i] = setup_hostages(
+            HOSTAGE_WIDTH,
+            HOSTAGE_HEIGHT,
+            x,
+            HOSTAGE_Y
+        );
+        x += 20;
+    }
+}
+
+// --------------------HELICOPTER---------------------------
 
 Helicopter setup_helicopter() {
     Helicopter helicopter;
@@ -540,34 +523,10 @@ int main(int argc, char *argv[]) {
     pthread_mutex_init(&is_missile_active_mutex, NULL);
     pthread_mutex_init(&bridge_mutex, NULL);
     pthread_mutex_init(&left_building_mutex, NULL);
-    setup_bridge();
 
     Building buildings[NUM_OF_BUILDINGS];
-    buildings[0] = setup_buildings(
-        BUILDING_WIDTH,
-        BUILDING_HEIGHT,
-        LEFT_BUILDING_X,
-        BUILDING_Y
-    );
-    
-    buildings[1] = setup_buildings(
-        BUILDING_WIDTH,
-        BUILDING_HEIGHT,
-        RIGHT_BUILDING_X,
-        BUILDING_Y
-    );
-
     Hostage hostages[NUM_OF_INITIAL_HOSTAGES];
-    int x = 8;
-    for (int i = 0; i < NUM_OF_INITIAL_HOSTAGES; i++) {
-        hostages[i] = setup_hostages(
-            HOSTAGE_WIDTH,
-            HOSTAGE_HEIGHT,
-            x,
-            HOSTAGE_Y
-        );
-        x += 20;
-    }
+    setup_scenario(buildings, hostages);
 
     pthread_t helicopter_thread;
     Helicopter helicopter = setup_helicopter();
