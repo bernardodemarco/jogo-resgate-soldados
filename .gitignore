@@ -1,5 +1,3 @@
+build/*
+!build/.gitkeep
 .vscode
-# Ignore all
-*
-# Unignore all with extensions
-!*.*
