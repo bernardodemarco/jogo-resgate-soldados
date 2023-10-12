@@ -126,7 +126,7 @@ Building setup_buildings(int w, int h, int x, int y) {
 
 void render_buildings(Building buildings[]) {
     for (int i = 0; i < NUM_OF_BUILDINGS; i++) {
-        SDL_SetRenderDrawColor(renderer, 102, 66, 40, 255);
+        SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
         SDL_RenderFillRect(renderer, &(buildings[i].sdl_obj));
     }
 }
@@ -266,7 +266,7 @@ void* helicopter_thread_func(void* args) {
 }
 // --------------------MISSILE---------------------------
 void render_missile(SDL_Rect *sdl_obj) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_SetRenderDrawColor(renderer, 204, 85, 0, 255);
     SDL_RenderFillRect(renderer, sdl_obj);
 }
 
@@ -326,7 +326,7 @@ AntiAircraft setup_aircraft(int id) {
                                      
 void render_aircrafts(AntiAircraft aircrafts[]) {
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 128, 0, 32, 255);
         SDL_RenderFillRect(renderer, &(aircrafts[i].sdl_obj));
     }
 
