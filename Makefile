@@ -1,12 +1,14 @@
-build:
-	gcc game.c -Wall -pthread -lSDL2 -lSDL2main -o game
-run:
-	./game
+compile:
+	gcc ./src/game.c  -Wall -pthread -lSDL2 -lSDL2main -o build/game
+
 easy:
-	./game 0
+	./build/game 0
+
 medium:
-	./game 1
+	./build/game 1
+
 hard:
-	./game 2
+	./build/game 2
+
 clean:
-	rm game
+	rm build/game
