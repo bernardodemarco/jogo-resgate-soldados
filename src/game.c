@@ -438,8 +438,6 @@ void *anti_aircraft_thread(void *args) {
     bool is_left_building_occupied = false;
 
     int missile_index = 0;
-    pthread_mutex_t missile_index_mutex;
-    pthread_mutex_init(&missile_index_mutex, NULL);
 
     while (true) {
         bool has_collided_with_bridge = 
@@ -476,10 +474,8 @@ void *anti_aircraft_thread(void *args) {
                 continue;
             }
 
-            pthread_mutex_lock(&missile_index_mutex);
             int current_index = missile_index;
             missile_index = (missile_index + 1) % ammunition;
-            pthread_mutex_unlock(&missile_index_mutex);
 
             pthread_t missile_thread;
             setup_missile(
@@ -495,7 +491,6 @@ void *anti_aircraft_thread(void *args) {
         }
     }
     sem_destroy(&(anti_aircraft -> ammunition_sem));
-    pthread_mutex_destroy(&missile_index_mutex);
     pthread_exit(NULL);
 }
 
