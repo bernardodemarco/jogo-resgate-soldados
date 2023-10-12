@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <pthread.h>
-#include <stdbool.h>
 #include <semaphore.h>
 #include "./constants.h"
 #include "./types.h"
@@ -535,7 +535,7 @@ int main(int argc, char *argv[]) {
         buildings,
         hostages
     };
-    pthread_create(&helicopter_thread, NULL, helicopter_thread_func, (void *) &helicopter_thread_args);
+    pthread_create(&helicopter_thread, NULL, helicopter_thread_func, &helicopter_thread_args);
 
     AntiAircraft anti_aircrafts[NUM_OF_ANTI_AIRCRAFTS];    
     for (int i = 0; i < NUM_OF_ANTI_AIRCRAFTS; i++) {
