@@ -15,29 +15,29 @@ https://github.com/user-attachments/assets/84580452-a4da-4a00-88a7-f6041b5c8060
 
 The game employs a set of cooperating threads to simulate the battlefield components. The **Helicopter thread** is responsible for tracking the helicopter's position, managing the soldier count, and detecting collisions with on-screen obstacles.
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L201-L266
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L201-L266
 
 Each **Anti-Aircraft Battery thread** represents a moving battery unit. Each battery maintains its own semaphore-guarded ammunition supply. When ammunition is available, a missile thread is spawned; otherwise, the battery moves to a reload depot to replenish its supply.
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L431-L495
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L431-L495
 
 Each **Missile thread** handles the behavior of a single projectile. It continuously updates its position until either impacting the helicopter, triggering a game-over condition, or leaving the screen and terminating without collision.
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L280-L303
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L280-L303
 
 A mutex controls exclusive access to the bridge, allowing only one battery to cross at a time.
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L471-L475
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L471-L475
 
 Another mutex protects the reload depot, ensuring that only one battery reloads at once.
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L452-L458
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L452-L458
 
 Ammunition availability is regulated by semaphores to prevent firing when ammunition is (((depleted))).
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L447-L450
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L447-L450
 
-https://github.com/bernardodemarco/jogo-resgate-soldados/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L424-L429
+https://github.com/bernardodemarco/posix-multithreaded-game/blob/f9859ea539bbb90327288519b8e5fcb78176c527/src/game.c#L424-L429
 
 ## Difficulty Levels
 
