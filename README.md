@@ -2,6 +2,8 @@
 
 This game was developed in C to practice and demonstrate concurrent programming concepts using POSIX threads and synchronization primitives. It simulates an air-rescue mission in which a helicopter must transport ten soldiers from a base on the left side of the screen to a base on the right, while avoiding missile attacks from enemy anti-aircraft batteries.
 
+https://github.com/user-attachments/assets/84580452-a4da-4a00-88a7-f6041b5c8060
+
 ## Table of Contents
 
 - [Concurrency Model](#concurrency-model)
