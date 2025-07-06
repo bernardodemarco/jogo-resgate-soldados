@@ -79,7 +79,9 @@ make clean
 
 ## Project Structure
 
-<!-- ```bash
+The directory structure of the project is as follows:
+
+```bash
   ├── src
   │   ├── game.c # game source code
   │   ├── constants.h # constants
@@ -88,4 +90,4 @@ make clean
   │   └── game # compiled game
   ├── Makefile
   └── README.md
-``` -->
+```
